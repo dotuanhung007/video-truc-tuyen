@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[Bài Tập] Web Xem Phim Hoạt Hình Trực Tuyến - CodeGym Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Yêu cầu Mức 2: Tùy chỉnh CSS Thẻ A & Hover Effect */
+        .head-link-nav a {
+            text-decoration: none !important;
+            color: #cbd5e1;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .head-link-nav a:hover {
+            text-decoration: none !important;
+            font-weight: 700 !important;
+            color: #38bdf8 !important; /* Đổi màu chữ xanh neon */
+            background-color: rgba(56, 189, 248, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Yêu cầu Mức 2: Header Cố Định (Fixed Header) */
+        .fixed-app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Padding cho body bù lại chiều cao header cố định */
+        .app-body-offset {
+            padding-top: 130px; /* Bù lại Fixed Header + Head-Link bar */
+        }
+
+        /* Aspect ratio container cho responsive video player */
+        .video-container-aspect {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background-color: #000000;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+        }
+
+        .video-container-aspect iframe,
+        .video-container-aspect video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Viewport simulator wrapper cho Studio Testing */
+        .viewport-pc { max-width: 100%; margin: 0 auto; }
+        .viewport-tablet { max-width: 768px; margin: 0 auto; border: 8px solid #334155; border-radius: 16px; }
+        .viewport-mobile { max-width: 375px; margin: 0 auto; border: 8px solid #334155; border-radius: 24px; }
+
+        /* Animation cho active playlist card */
+        .playlist-card {
+            transition: all 0.2s ease;
+        }
+        .playlist-card.active {
+            border-color: #38bdf8;
+            background-color: rgba(56, 189, 248, 0.12);
+        }
+        .playlist-card:hover:not(.active) {
+            border-color: #475569;
+            background-color: #1e293b;
+        }
+
+        /* Tab Code Studio */
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            background-color: #090d16;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- TOP TOOLBAR: CHUYỂN ĐỔI CHẾ ĐỘ XEM TRỰC TIẾP & STUDIO NỘP BÀI CODEGYM -->
+    <div id="studio-toolbar" class="bg-slate-900 border-b border-slate-700 text-xs py-2 px-4 sticky top-0 z-[100] flex flex-wrap items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <span class="bg-sky-500 text-slate-950 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider text-[10px]">
+                CodeGym Studio
+            </span>
+            <span class="text-slate-300 font-semibold hidden sm:inline">
+                [Bài Tập] Trang Xem Phim Hoạt Hình Trực Tuyến
+            </span>
+        </div>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="flex items-center space-x-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+            <button id="btn-tab-app" onclick="switchMainTab('app')" class="px-3 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-play"></i> Xem Web Trực Tiếp
+            </button>
+            <button id="btn-tab-code" onclick="switchMainTab('code')" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-code"></i> Code Studio & Nộp Bài
+            </button>
+        </div>
+
+        <!-- Simulator Viewport Controls (Visible when in App mode) -->
+        <div id="viewport-controls" class="flex items-center space-x-2">
+            <span class="text-slate-400 hidden md:inline">Giả lập màn hình:</span>
+            <button onclick="setViewport('pc')" id="vp-pc" class="p-1.5 rounded bg-slate-700 text-sky-400 hover:bg-slate-600 transition" title="PC Desktop (100%)">
+                <i class="fa-solid fa-desktop"></i>
+            </button>
+            <button onclick="setViewport('tablet')" id="vp-tablet" class="p-1.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700 transition" title="Tablet (768px)">
+                <i class="fa-solid fa-tablet-screen-button"></i>
+            </button>
+            <button onclick="setViewport('mobile')" id="vp-mobile" class="p-1.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700 transition" title="Mobile (375px)">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- =========================================================================================
+         KHU VỰC 1: TRANG WEB PHIM HOẠT HÌNH TRỰC TIẾP (LIVE APP VIEW)
+         ========================================================================================= -->
+    <div id="main-app-container" class="viewport-pc transition-all duration-300 flex-1 flex flex-col">
+        
+        <!-- ================= MỨC 1 & 2: HEADER CỐ ĐỊNH (FIXED HEADER) ================= -->
+        <header class="fixed-app-header">
+            <!-- Header Top Bar: Logo & Thương Hiệu + Ô Tìm Kiếm -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+                
+                <!-- Logo bên trái -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="resetAppView()">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-sky-500/30">
+                        <i class="fa-solid fa-child-reaching"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                            KIDFLIX <span class="text-[10px] bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold">AN TOÀN</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">Thế Giới Hoạt Hình Thuyết Minh Cho Trẻ Em</p>
+                    </div>
+                </div>
+
+                <!-- Thanh Tìm Kiếm Phim theo tên (Mức 1 & 3) -->
+                <div class="flex-1 max-w-md relative">
+                    <input type="text" id="search-input" onkeyup="handleSearch()" placeholder="Tìm tên phim hoạt hình (VD: Doraemon, Tom & Jerry...)" 
+                           class="w-full bg-slate-800/80 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-full pl-10 pr-4 py-2 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all placeholder-slate-500">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
+                </div>
+
+                <!-- Tùy chọn chuyển đổi định dạng phát (Thẻ Video vs iFrame YouTube) -->
+                <div class="hidden lg:flex items-center space-x-2 text-xs text-slate-400 bg-slate-800/60 p-1.5 rounded-lg border border-slate-700/60">
+                    <i class="fa-solid fa-shield-cat text-amber-400"></i>
+                    <span>100% Thuyết Minh • Không QC</span>
+                </div>
+            </div>
+
+            <!-- Head-Link: Thanh Điều Hướng Menu Chính (Mức 1 & 2) -->
+            <nav class="bg-slate-900/90 border-t border-slate-800/80 px-4 sm:px-6 py-1.5">
+                <div class="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto no-scrollbar">
+                    <ul class="head-link-nav flex items-center space-x-1 sm:space-x-3 text-xs sm:text-sm font-medium whitespace-nowrap">
+                        <li><a href="#home" class="active"><i class="fa-solid fa-house mr-1"></i> Trang chủ</a></li>
+                        <li><a href="#new"><i class="fa-solid fa-fire text-amber-400 mr-1"></i> Phim Mới Cập Nhật</a></li>
+                        <li><a href="#popular"><i class="fa-solid fa-star text-yellow-400 mr-1"></i> Xem Nhiều Nhất</a></li>
+                        <li><a href="#dubbed"><i class="fa-solid fa-microphone text-emerald-400 mr-1"></i> Thuyết Minh</a></li>
+                        <li><a href="#genres"><i class="fa-solid fa-layer-group mr-1"></i> Thể Loại</a></li>
+                        <li><a href="#contact"><i class="fa-solid fa-envelope mr-1"></i> Liên Hệ</a></li>
+                    </ul>
+
+                    <!-- Quick Sort Buttons (Phim mới / Nhiều lượt xem) -->
+                    <div class="hidden md:flex items-center space-x-2 text-xs ml-4">
+                        <span class="text-slate-400 text-[11px]">Sắp xếp:</span>
+                        <button onclick="sortPlaylist('latest')" id="sort-latest" class="px-2.5 py-1 rounded bg-sky-500/20 text-sky-400 border border-sky-500/40 font-semibold hover:bg-sky-500/30 transition">
+                            Mới nhất
+                        </button>
+                        <button onclick="sortPlaylist('views')" id="sort-views" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
+                            Nhiều lượt xem
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- ================= BỐ CỤC NỘI DUNG CHÍNH (CONTENT AREA) ================= -->
+        <!-- Mức 1 & 3: Layout Responsive chia Left Content (Playlist) & Right Content (Màn Hình Phát) -->
+        <main class="app-body-offset max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- ---------------------------------------------------------------------------------
+                     RIGHT CONTENT: KHU VỰC XEM VIDEO CHÍNH (Màn hình phát + Thông tin chi tiết)
+                     Ghi chú: Trên Mobile (Level 3 Responsive), Right Content sẽ xếp phía trên
+                     --------------------------------------------------------------------------------- -->
+                <section class="lg:col-span-8 order-1 lg:order-2 flex flex-col gap-4">
+                    
+                    <!-- Player Card Container -->
+                    <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-3 sm:p-4 shadow-xl">
+                        
+                        <!-- Player Box Element (Hỗ trợ chuyển đổi linh hoạt thẻ <video> và <iframe>) -->
+                        <div id="player-box" class="video-container-aspect mb-4">
+                            <!-- Nội dung Player sẽ được render động bằng JS -->
+                        </div>
+
+                        <!-- Badge chỉ báo nguồn Video (HTML5 <video> vs YouTube <iframe>) -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span id="source-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                                    <i class="fa-solid fa-code"></i> HTML5 Video
+                                </span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    <i class="fa-solid fa-check"></i> HD 1080p
+                                </span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                    Thuyết Minh TV
+                                </span>
+                            </div>
+
+                            <!-- Switcher Chế độ phát thủ công để hỗ trợ Học Viên thử nghiệm cả 2 thẻ <video> & <iframe> -->
+                            <button onclick="togglePlayerSourceType()" class="text-xs text-sky-400 hover:text-sky-300 bg-sky-950/60 border border-sky-800 px-3 py-1 rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                <span>Chuyển Thẻ Player: <strong id="player-type-label"><iframe> YouTube</strong></span>
+                            </button>
+                        </div>
+
+                        <!-- Tiêu đề & Lượt xem của phim đang phát -->
+                        <div class="space-y-2">
+                            <h2 id="active-video-title" class="text-lg sm:text-xl font-extrabold text-white leading-snug">
+                                Đang tải tiêu đề phim...
+                            </h2>
+                            
+                            <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                                <div class="flex items-center space-x-4">
+                                    <span id="active-video-views"><i class="fa-solid fa-eye text-sky-400 mr-1"></i> 0 lượt xem</span>
+                                    <span id="active-video-date"><i class="fa-solid fa-calendar-days text-slate-500 mr-1"></i> Vừa cập nhật</span>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="toggleLike(this)" class="hover:text-rose-400 transition flex items-center gap-1 bg-slate-700/50 px-2.5 py-1 rounded-lg">
+                                        <i class="fa-regular fa-heart"></i> <span>Yêu thích</span>
+                                    </button>
+                                    <button onclick="shareMovie()" class="hover:text-sky-400 transition flex items-center gap-1 bg-slate-700/50 px-2.5 py-1 rounded-lg">
+                                        <i class="fa-solid fa-share-nodes"></i> <span>Chia sẻ</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mô tả phim -->
+                        <div class="mt-4 pt-3 border-t border-slate-700/50 bg-slate-900/40 p-3 rounded-xl">
+                            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Mô tả nội dung:</h4>
+                            <p id="active-video-desc" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                Đang tải thông tin nội dung chi tiết của phim hoạt hình...
+                            </p>
+                        </div>
+                    </div>
+
+                </section>
+
+
+                <!-- ---------------------------------------------------------------------------------
+                     LEFT CONTENT: DANH SÁCH / PLAYLIST PHIM HOẠT HÌNH CÓ SẴN (Sidebar Menu)
+                     Ghi chú: Trên Mobile, Left Content tự động chuyển về dạng danh sách phía dưới
+                     --------------------------------------------------------------------------------- -->
+                <aside class="lg:col-span-4 order-2 lg:order-1 flex flex-col gap-4">
+                    
+                    <div class="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 shadow-xl flex flex-col h-full">
+                        
+                        <!-- Header Sidebar Playlist -->
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 mb-3">
+                            <h3 class="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-ul text-sky-400"></i>
+                                <span>DANH SÁCH PHIM</span>
+                            </h3>
+                            <span id="playlist-count-badge" class="text-xs bg-slate-700 text-sky-300 px-2 py-0.5 rounded-full font-bold">
+                                6 phim
+                            </span>
+                        </div>
+
+                        <!-- Bộ lọc nhanh trên Left Content Sidebar -->
+                        <div class="flex items-center gap-2 mb-3">
+                            <button onclick="filterCategory('all')" id="filter-btn-all" class="flex-1 py-1 text-xs rounded-md bg-sky-500 text-slate-950 font-bold transition">Tất cả</button>
+                            <button onclick="filterCategory('video')" id="filter-btn-video" class="flex-1 py-1 text-xs rounded-md bg-slate-700 text-slate-300 font-semibold hover:bg-slate-600 transition">Thẻ &lt;video&gt;</button>
+                            <button onclick="filterCategory('youtube')" id="filter-btn-youtube" class="flex-1 py-1 text-xs rounded-md bg-slate-700 text-slate-300 font-semibold hover:bg-slate-600 transition">YouTube</button>
+                        </div>
+
+                        <!-- Danh sách Video Playlist (Render bởi JS) -->
+                        <div id="playlist-container" class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                            <!-- JS render các thẻ phim hoạt hình vào đây -->
+                        </div>
+
+                    </div>
+
+                </aside>
+
+            </div>
+
+        </main>
+
+
+        <!-- ================= MỨC 1: FOOTER BẢN QUYỀN & THÔNG TIN ================= -->
+        <footer class="mt-auto bg-slate-950 border-t border-slate-800/80 text-slate-400 text-xs py-8 px-4">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Cột 1: Thông tin thương hiệu -->
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 text-white font-bold text-sm">
+                        <i class="fa-solid fa-child-reaching text-sky-400"></i>
+                        <span>KIDFLIX ANIMATION STUDIO</span>
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">
+                        Nền tảng xem phim hoạt hình trực tuyến chọn lọc dành cho trẻ em. Cam kết 100% nội dung an toàn, giáo dục và có thuyết minh tiếng Việt chuẩn.
+                    </p>
+                </div>
+
+                <!-- Cột 2: Quy chuẩn nội dung bài tập CodeGym -->
+                <div class="space-y-2">
+                    <h4 class="text-white font-bold uppercase text-xs tracking-wider">Tiêu chuẩn trang web:</h4>
+                    <ul class="space-y-1 text-slate-400">
+                        <li><i class="fa-solid fa-check text-sky-400 mr-1.5"></i> Header cố định (Position Fixed)</li>
+                        <li><i class="fa-solid fa-check text-sky-400 mr-1.5"></i> Bố cục Layout Flexbox / Grid chuẩn <div></li>
+                        <li><i class="fa-solid fa-check text-sky-400 mr-1.5"></i> Sử dụng cả thẻ &lt;video&gt; và &lt;iframe&gt;</li>
+                        <li><i class="fa-solid fa-check text-sky-400 mr-1.5"></i> Responsive Design cho PC, Tablet, Mobile</li>
+                    </ul>
+                </div>
+
+                <!-- Cột 3: Bản quyền CodeGym -->
+                <div class="space-y-2">
+                    <h4 class="text-white font-bold uppercase text-xs tracking-wider">Thông tin nộp bài:</h4>
+                    <p>Học viên: <strong class="text-sky-300">CodeGym Student</strong></p>
+                    <p>Khóa học: Lập trình Web Front-end cơ bản</p>
+                    <p class="text-slate-500 pt-2 border-t border-slate-800">
+                        © 2026 KIDFLIX. Tất cả nội dung phục vụ mục đích thực hành bài tập CodeGym.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+
+    <!-- =========================================================================================
+         KHU VỰC 2: TRÌNH XEM MÃ NGUỒN & HƯỚNG DẪN NỘP BÀI (CODE STUDIO & SUBMISSION)
+         ========================================================================================= -->
+    <div id="main-code-container" class="hidden max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 flex-col">
+        
+        <!-- Header Mã Nguồn -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-laptop-code text-sky-400"></i>
+                    <span>Trình Xem Mã Nguồn & Hướng Dẫn Nộp Bài GitHub / CodePen</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">
+                    Bạn có thể xem mã nguồn được tách bạch thành từng file (index.html, style.css, script.js) để nộp bài chuẩn quy định.
+                </p>
+            </div>
+
+            <!-- Action Button: Copy Source -->
+            <button onclick="copyActiveSourceCode()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-2 shadow-lg shadow-sky-500/20">
+                <i class="fa-solid fa-copy"></i>
+                <span id="copy-btn-text">Sao Chép File Đang Chọn</span>
+            </button>
+        </div>
+
+        <!-- Code File Tabs Switcher -->
+        <div class="flex items-center space-x-2 border-b border-slate-700 mb-4 overflow-x-auto">
+            <button onclick="switchCodeFile('html')" id="code-tab-html" class="px-4 py-2.5 text-xs font-bold border-b-2 border-sky-400 text-sky-400 flex items-center gap-2">
+                <i class="fa-brands fa-html5 text-orange-500"></i> index.html
+            </button>
+            <button onclick="switchCodeFile('css')" id="code-tab-css" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-white flex items-center gap-2">
+                <i class="fa-brands fa-css3-alt text-blue-500"></i> style.css
+            </button>
+            <button onclick="switchCodeFile('js')" id="code-tab-js" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-white flex items-center gap-2">
+                <i class="fa-brands fa-js text-yellow-400"></i> script.js
+            </button>
+            <button onclick="switchCodeFile('single')" id="code-tab-single" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-white flex items-center gap-2">
+                <i class="fa-solid fa-file-code text-emerald-400"></i> Single File All-in-One
+            </button>
+        </div>
+
+        <!-- Editor Code Box Display -->
+        <div class="relative rounded-2xl overflow-hidden border border-slate-700 shadow-2xl mb-8">
+            <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span id="code-filename-label" class="font-mono text-sky-300">index.html</span>
+                <span>Chuẩn mã nguồn CodeGym</span>
+            </div>
+            <pre id="code-content-display" class="code-block p-4 overflow-x-auto text-xs leading-relaxed max-h-[500px] selection:bg-sky-500/30"></pre>
+        </div>
+
+        <!-- Hướng dẫn nộp bài GitHub & CodePen -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Hướng dẫn GitHub -->
+            <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl space-y-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <i class="fa-brands fa-github text-lg"></i> Hướng Dẫn Đẩy Lên GitHub
+                </h3>
+                <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
+                    <li>Tạo thư mục trên máy tính và lưu 2 tệp <code class="text-sky-300 bg-slate-900 px-1 py-0.5 rounded">index.html</code> & <code class="text-sky-300 bg-slate-900 px-1 py-0.5 rounded">style.css</code>.</li>
+                    <li>Mở Git Bash / Terminal tại thư mục đó và chạy các lệnh:</li>
+                </ol>
+                <div class="bg-slate-950 p-3 rounded-xl text-sky-300 font-mono text-[11px] space-y-1">
+                    <p>git init</p>
+                    <p>git add .</p>
+                    <p>git commit -m "Complete CodeGym Animation Web Assignment"</p>
+                    <p>git branch -M main</p>
+                    <p>git remote add origin https://github.com/USER/repository.git</p>
+                    <p>git push -u origin main</p>
+                </div>
+            </div>
+
+            <!-- Hướng dẫn CodePen -->
+            <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl space-y-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <i class="fa-brands fa-codepen text-lg text-amber-400"></i> Hướng Dẫn Đưa Lên CodePen
+                </h3>
+                <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
+                    <li>Truy cập <a href="https://codepen.io/pen/" target="_blank" class="text-sky-400 underline">CodePen.io/pen</a> và đăng nhập tài khoản.</li>
+                    <li>Chọn tab <strong>Single File All-in-One</strong> ở trên và sao chép toàn bộ mã nguồn.</li>
+                    <li>Dán mã nguồn vào ô <strong>HTML</strong> trên CodePen.</li>
+                    <li>Lưu Pen (Save) và sao chép đường link URL Pen dán vào mục nộp bài CodeGym.</li>
+                </ol>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================================================
+         JAVASCRIPT LOGIC
+         ========================================================================================= -->
+    <script>
+        // DỮ LIỆU DANH SÁCH PHIM HOẠT HÌNH CHO BÀI TẬP
+        const cartoonPlaylist = [
+            {
+                id: 1,
+                title: "Doraemon: Thành Phố Phép Thuật & Những Bạn Nhỏ",
+                views: "1.250.400",
+                rawViews: 1250400,
+                date: "15/10/2026",
+                type: "youtube",
+                youtubeId: "v439jD-K8Jg", // YouTube Safe Embed sample ID
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=60",
+                description: "Doraemon cùng Nobita khám phá thành phố phép thuật kỳ diệu. Phim hoạt hình thuyết minh chuẩn tiếng Việt HD 1080p, nội dung vui nhộn giáo dục dành cho bé.",
+                badge: "Hot nhất"
+            },
+            {
+                id: 2,
+                title: "Thỏ Bảy Màu: Cuộc Phiêu Lưu Kỳ Thú Vào Rừng Xanh",
+                views: "980.120",
+                rawViews: 980120,
+                date: "12/10/2026",
+                type: "video",
+                youtubeId: "L_LUpnjgPso",
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&auto=format&fit=crop&q=60",
+                description: "Câu chuyện phiêu lưu vô cùng hài hước của Thỏ Bảy Màu và các bạn trong rừng rậm. Phát trực tiếp bằng thẻ HTML5 <video> tốc độ cao.",
+                badge: "Mới"
+            },
+            {
+                id: 3,
+                title: "Tom and Jerry: Tập Phim Giáng Sinh Vui Nhộn",
+                views: "2.450.000",
+                rawViews: 2450000,
+                date: "01/10/2026",
+                type: "youtube",
+                youtubeId: "t0Q2otsqC4I",
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=60",
+                description: "Cuộc rượt đuổi không hồi kết giữa chú mèo Tom và chú chuột thông minh Jerry trong bầu không khí ấm áp đêm Noel.",
+                badge: "Xem nhiều"
+            },
+            {
+                id: 4,
+                title: "Biệt Đội Cứu Hộ Tí Hon - Sứ Mệnh Bảo Vệ Trái Đất",
+                views: "620.300",
+                rawViews: 620300,
+                date: "08/10/2026",
+                type: "video",
+                youtubeId: "Yo1c_A73vQk",
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=60",
+                description: "Những bài học giáo dục bổ ích về tinh thần đồng đội và tình yêu thiên nhiên dành cho trẻ em mầm non.",
+                badge: "Giáo dục"
+            },
+            {
+                id: 5,
+                title: "Chú Heo Peppa: Buổi Dã Ngoại Bất Ngờ Của Gia Đình",
+                views: "1.890.000",
+                rawViews: 1890000,
+                date: "05/10/2026",
+                type: "youtube",
+                youtubeId: "dQw4w9WgXcQ",
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=60",
+                description: "Chuyến dã ngoại tràn ngập tiếng cười của gia đình Peppa Pig. Thuyết minh giọng đọc truyền cảm chuẩn Tiếng Việt.",
+                badge: "Nổi bật"
+            },
+            {
+                id: 6,
+                title: "Oggy và Những Chú Gián Ma Quái - Trận Chiến Mới",
+                views: "1.100.500",
+                rawViews: 1100500,
+                date: "14/10/2026",
+                type: "youtube",
+                youtubeId: "v439jD-K8Jg",
+                videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+                thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60",
+                description: "Chú mèo xanh Oggy vui tính lại phải đối phó với ba chú gián tinh tinh nghịch trong căn nhà màu vàng quen thuộc.",
+                badge: "Hài hước"
+            }
+        ];
+
+        // Trạng thái ứng dụng
+        let currentVideo = cartoonPlaylist[0]; // Mặc định hiển thị phim đầu tiên
+        let filteredList = [...cartoonPlaylist];
+        let currentFilterType = 'all';
+        let currentCodeFile = 'html';
+
+        // KHỞI TẠO TRANG WEB
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPlaylist(filteredList);
+            loadVideoToPlayer(currentVideo);
+            generateCodeStudioSource();
+        });
+
+        // HÀM RENDER PLAYLIST BÊN LEFT CONTENT (MỨC 1 & 2)
+        function renderPlaylist(list) {
+            const container = document.getElementById('playlist-container');
+            const countBadge = document.getElementById('playlist-count-badge');
+            
+            countBadge.innerText = `${list.length} phim`;
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        <i class="fa-solid fa-film-slash text-2xl mb-2"></i>
+                        <p>Không tìm thấy phim hoạt hình phù hợp!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                const isActive = item.id === currentVideo.id;
+                const sourceIcon = item.type === 'youtube' 
+                    ? '<i class="fa-brands fa-youtube text-red-500"></i> YouTube' 
+                    : '<i class="fa-solid fa-circle-play text-sky-400"></i> Video MP4';
+
+                return `
+                    <div onclick="selectVideo(${item.id})" 
+                         class="playlist-card ${isActive ? 'active' : ''} border border-slate-700/60 p-2 rounded-xl cursor-pointer flex gap-3 items-center">
+                        
+                        <!-- Thumbnail Image -->
+                        <div class="relative w-24 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-slate-900">
+                            <img src="${item.thumbnail}" alt="${item.title}" class="w-full h-full object-cover">
+                            <span class="absolute bottom-1 right-1 bg-black/80 text-[9px] text-white px-1 rounded font-mono">HD</span>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-200 line-clamp-2 leading-snug hover:text-sky-300 transition">
+                                ${item.title}
+                            </h4>
+                            <div class="flex items-center justify-between mt-1 text-[10px] text-slate-400">
+                                <span>${sourceIcon}</span>
+                                <span><i class="fa-solid fa-eye text-slate-500"></i> ${item.views}</span>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // HÀM CHỌN VIDEO KHI CLICK VÀO PLAYLIST (MỨC 2: DYNAMIC UPDATE PLAYER)
+        function selectVideo(id) {
+            const selected = cartoonPlaylist.find(v => v.id === id);
+            if (!selected) return;
+
+            currentVideo = selected;
+            loadVideoToPlayer(currentVideo);
+            renderPlaylist(filteredList); // Re-render để highlight item active
+
+            // Cuộn mượt lên màn hình xem video nếu đang ở màn hình nhỏ
+            if (window.innerWidth < 1024) {
+                document.getElementById('player-box').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // HÀM LOAD VIDEO VÀO MÀN HÌNH PHÁT (MỨC 1 & 3: THẺ <VIDEO> VÀ <IFRAME>)
+        function loadVideoToPlayer(video) {
+            const playerBox = document.getElementById('player-box');
+            const sourceBadge = document.getElementById('source-badge');
+            const playerTypeLabel = document.getElementById('player-type-label');
+
+            // Cập nhật thẻ HTML tương ứng với loại nguồn video
+            if (video.type === 'youtube') {
+                playerBox.innerHTML = `
+                    <iframe src="https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1" 
+                            title="${video.title}" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                    </iframe>
+                `;
+                sourceBadge.innerHTML = `<i class="fa-brands fa-youtube text-red-500"></i> Nhúng <iframe> YouTube`;
+                sourceBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1";
+                playerTypeLabel.innerHTML = `&lt;iframe&gt; YouTube`;
+            } else {
+                playerBox.innerHTML = `
+                    <video controls autoplay class="w-full h-full object-cover">
+                        <source src="${video.videoSrc}" type="video/mp4">
+                        Trình duyệt của bạn không hỗ trợ thẻ video HTML5.
+                    </video>
+                `;
+                sourceBadge.innerHTML = `<i class="fa-solid fa-video text-sky-400"></i> Thẻ Direct &lt;video&gt;`;
+                sourceBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1";
+                playerTypeLabel.innerHTML = `&lt;video&gt; Direct`;
+            }
+
+            // Cập nhật thông tin tiêu đề, lượt xem, mô tả
+            document.getElementById('active-video-title').innerText = video.title;
+            document.getElementById('active-video-views').innerHTML = `<i class="fa-solid fa-eye text-sky-400 mr-1"></i> ${video.views} lượt xem`;
+            document.getElementById('active-video-date').innerHTML = `<i class="fa-solid fa-calendar-days text-slate-500 mr-1"></i> Ngày đăng: ${video.date}`;
+            document.getElementById('active-video-desc').innerText = video.description;
+        }
+
+        // CHUYỂN ĐỔI CHẾ ĐỘ PHÁT TỰ DO GIỮA <VIDEO> VÀ <IFRAME> CHO HỌC VIÊN KIỂM THỬ
+        function togglePlayerSourceType() {
+            currentVideo.type = (currentVideo.type === 'youtube') ? 'video' : 'youtube';
+            loadVideoToPlayer(currentVideo);
+            renderPlaylist(filteredList);
+        }
+
+        // CHỨC NĂNG TÌM KIẾM PHIM THEO TÊN (MỨC 1)
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            filteredList = cartoonPlaylist.filter(item => 
+                item.title.toLowerCase().includes(query) || 
+                item.description.toLowerCase().includes(query)
+            );
+
+            renderPlaylist(filteredList);
+        }
+
+        // BỘ LỌC BÊN SIDEBAR LEFT CONTENT
+        function filterCategory(type) {
+            currentFilterType = type;
+            
+            // Cập nhật nút active
+            ['all', 'video', 'youtube'].forEach(t => {
+                const btn = document.getElementById(`filter-btn-${t}`);
+                if (t === type) {
+                    btn.className = "flex-1 py-1 text-xs rounded-md bg-sky-500 text-slate-950 font-bold transition";
+                } else {
+                    btn.className = "flex-1 py-1 text-xs rounded-md bg-slate-700 text-slate-300 font-semibold hover:bg-slate-600 transition";
+                }
+            });
+
+            if (type === 'all') {
+                filteredList = [...cartoonPlaylist];
+            } else {
+                filteredList = cartoonPlaylist.filter(item => item.type === type);
+            }
+
+            renderPlaylist(filteredList);
+        }
+
+        // BỘ LỌC SẮP XẾP PHIM (MỚI CẬP NHẬT / XEM NHIỀU NHẤT)
+        function sortPlaylist(sortType) {
+            const btnLatest = document.getElementById('sort-latest');
+            const btnViews = document.getElementById('sort-views');
+
+            if (sortType === 'latest') {
+                filteredList.sort((a, b) => b.id - a.id);
+                btnLatest.className = "px-2.5 py-1 rounded bg-sky-500/20 text-sky-400 border border-sky-500/40 font-semibold hover:bg-sky-500/30 transition";
+                btnViews.className = "px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition";
+            } else {
+                filteredList.sort((a, b) => b.rawViews - a.rawViews);
+                btnViews.className = "px-2.5 py-1 rounded bg-sky-500/20 text-sky-400 border border-sky-500/40 font-semibold hover:bg-sky-500/30 transition";
+                btnLatest.className = "px-2.5 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition";
+            }
+
+            renderPlaylist(filteredList);
+        }
+
+        // YÊU THÍCH / CHIA SẺ UI FEEDBACK
+        function toggleLike(btn) {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('fa-regular')) {
+                icon.className = 'fa-solid fa-heart text-rose-500';
+                btn.classList.add('text-rose-400');
+            } else {
+                icon.className = 'fa-regular fa-heart';
+                btn.classList.remove('text-rose-400');
+            }
+        }
+
+        function shareMovie() {
+            alert(`Đã sao chép liên kết phim "${currentVideo.title}"! Bạn có thể dán để chia sẻ.`);
+        }
+
+        function resetAppView() {
+            document.getElementById('search-input').value = '';
+            filteredList = [...cartoonPlaylist];
+            renderPlaylist(filteredList);
+        }
+
+        // =========================================================================================
+        // STUDIO WORKSPACE & SIMULATOR CONTROLS
+        // =========================================================================================
+        function switchMainTab(tab) {
+            const appView = document.getElementById('main-app-container');
+            const codeView = document.getElementById('main-code-container');
+            const btnApp = document.getElementById('btn-tab-app');
+            const btnCode = document.getElementById('btn-tab-code');
+            const vpControls = document.getElementById('viewport-controls');
+
+            if (tab === 'app') {
+                appView.classList.remove('hidden');
+                codeView.classList.add('hidden');
+                codeView.classList.remove('flex');
+                btnApp.className = "px-3 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition-all flex items-center gap-1.5";
+                btnCode.className = "px-3 py-1 rounded-md text-xs font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5";
+                vpControls.classList.remove('hidden');
+            } else {
+                appView.classList.add('hidden');
+                codeView.classList.remove('hidden');
+                codeView.classList.add('flex');
+                btnCode.className = "px-3 py-1 rounded-md text-xs font-semibold bg-sky-500 text-slate-950 transition-all flex items-center gap-1.5";
+                btnApp.className = "px-3 py-1 rounded-md text-xs font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5";
+                vpControls.classList.add('hidden');
+            }
+        }
+
+        function setViewport(size) {
+            const appContainer = document.getElementById('main-app-container');
+            ['pc', 'tablet', 'mobile'].forEach(s => {
+                const btn = document.getElementById(`vp-${s}`);
+                if (s === size) {
+                    btn.className = "p-1.5 rounded bg-slate-700 text-sky-400 hover:bg-slate-600 transition";
+                } else {
+                    btn.className = "p-1.5 rounded bg-slate-800 text-slate-400 hover:bg-slate-700 transition";
+                }
+            });
+
+            appContainer.className = `viewport-${size} transition-all duration-300 flex-1 flex flex-col my-2`;
+        }
+
+        // TẠO MÃ NGUỒN MẪU CHO CODE STUDIO
+        let sourceFiles = { html: '', css: '', js: '', single: '' };
+
+        function generateCodeStudioSource() {
+            sourceFiles.html = `<!-- index.html - Bài tập CodeGym: Web Xem Phim Hoạt Hình -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Web Xem Phim Hoạt Hình Trực Tuyến</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header Cố Định -->
+    <header class="main-header">
+        <div class="logo-area">
+            <i class="fa-solid fa-child-reaching"></i>
+            <h1>KIDFLIX ANIMATION</h1>
+        </div>
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Tìm phim hoạt hình...">
+        </div>
+        <nav class="head-link">
+            <ul>
+                <li><a href="#">Trang chủ</a></li>
+                <li><a href="#">Phim Mới</a></li>
+                <li><a href="#">Thuyết Minh</a></li>
+                <li><a href="#">Liên Hệ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Content Layout -->
+    <div class="content-container">
+        <!-- Left Content: Danh sách Phim -->
+        <aside class="left-content">
+            <h3>Danh Sách Phim</h3>
+            <ul id="playlist">
+                <!-- Javascript sẽ thêm danh sách phim vào đây -->
+            </ul>
+        </aside>
+
+        <!-- Right Content: Màn Hình Xem Video -->
+        <main class="right-content">
+            <div class="video-player">
+                <iframe id="main-player" src="https://www.youtube.com/embed/v439jD-K8Jg" allowfullscreen></iframe>
+            </div>
+            <h2 id="video-title">Doraemon: Thành Phố Phép Thuật</h2>
+            <p id="video-desc">Mô tả phim hoạt hình hấp dẫn...</p>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 KIDFLIX - Bài tập CodeGym về thuộc tính position và layout CSS.</p>
+    </footer>
+
+    <script src="script.js"><\/script>
+</body>
+</html>`;
+
+            sourceFiles.css = `/* style.css - Định dạng giao diện Web Hoạt Hình */
+
+/* Reset cơ bản */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding-top: 120px; /* Bù lại Fixed Header */
+}
+
+/* 1. Header Cố Định (Fixed Header) */
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #1e293b;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 2. Định dạng thẻ <a> Head-link (Mức 2) */
+.head-link ul {
+    display: flex;
+    list-style: none;
+    gap: 20px;
+}
+
+.head-link a {
+    text-decoration: none; /* Bỏ gạch chân */
+    color: #cbd5e1;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.head-link a:hover {
+    font-weight: bold; /* Bôi đậm */
+    color: #38bdf8;   /* Đổi màu chữ */
+}
+
+/* 3. Bố cục Content Flexbox / Grid */
+.content-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 20px auto;
+    gap: 20px;
+    padding: 0 15px;
+}
+
+.left-content {
+    flex: 1;
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.right-content {
+    flex: 2;
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.video-player {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+}
+
+.video-player iframe, .video-player video {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+}
+
+/* Responsive Media Queries (Mức 3) */
+@media (max-width: 768px) {
+    .content-container {
+        flex-direction: column; /* Đổi thành 1 cột trên Mobile */
+    }
+}`;
+
+            sourceFiles.js = `// script.js - Xử lý chuyển đổi video và tương tác
+function selectVideo(src, title) {
+    document.getElementById('main-player').src = src;
+    document.getElementById('video-title').innerText = title;
+}`;
+
+            sourceFiles.single = document.documentElement.outerHTML;
+
+            switchCodeFile('html');
+        }
+
+        function switchCodeFile(fileType) {
+            currentCodeFile = fileType;
+            const display = document.getElementById('code-content-display');
+            const label = document.getElementById('code-filename-label');
+
+            ['html', 'css', 'js', 'single'].forEach(ft => {
+                const tab = document.getElementById(`code-tab-${ft}`);
+                if (ft === fileType) {
+                    tab.className = "px-4 py-2.5 text-xs font-bold border-b-2 border-sky-400 text-sky-400 flex items-center gap-2";
+                } else {
+                    tab.className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-white flex items-center gap-2";
+                }
+            });
+
+            if (fileType === 'html') {
+                label.innerText = 'index.html';
+                display.textContent = sourceFiles.html;
+            } else if (fileType === 'css') {
+                label.innerText = 'style.css';
+                display.textContent = sourceFiles.css;
+            } else if (fileType === 'js') {
+                label.innerText = 'script.js';
+                display.textContent = sourceFiles.js;
+            } else {
+                label.innerText = 'Single_File_All_In_One.html (Cho CodePen)';
+                display.textContent = sourceFiles.single;
+            }
+        }
+
+        function copyActiveSourceCode() {
+            const codeText = document.getElementById('code-content-display').textContent;
+            
+            // Clipboard Fallback Safe Execution
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(codeText);
+            } else {
+                const textArea = document.createElement('textarea');
+                textArea.value = codeText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+
+            const btnText = document.getElementById('copy-btn-text');
+            btnText.innerText = "Đã Sao Chép Thành Công!";
+            setTimeout(() => {
+                btnText.innerText = "Sao Chép File Đang Chọn";
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
